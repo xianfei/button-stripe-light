@@ -1,9 +1,9 @@
 /*
 author:zxw
-fution:4条灯带点亮+flag全局变量，定稿程序1
-触发：是按钮
-time: 2022-3-16
-version: 7.0
+fution:led2控制程序
+触发：红外
+time: 2022-3-27
+version: 10.0
 bug：none
 email：2474113608@qq.com
 package:Fsatled、MsTimer
@@ -11,27 +11,12 @@ package:Fsatled、MsTimer
 
 #include <MsTimer2.h>     //定时器库的头文件
 #include <FastLED.h>
-
-#define NUM_LEDS_RING1 120 //
 #define NUM_LEDS_RING2 120 
-#define NUM_LEDS_RING3 120 
-#define PIN_LED_RING1 13//
-#define PIN_LED_RING2 12
-#define PIN_LED_RING3 11
-CRGB rgb_led_ring1[NUM_LEDS_RING1]; 
+#define PIN_LED_RING2 13
 CRGB rgb_led_ring2[NUM_LEDS_RING2]; 
-CRGB rgb_led_ring3[NUM_LEDS_RING3]; 
-signed int index_ring1 = 0;
-signed int index_ring2 = 0;
-signed int index_ring3 = 0;
-
+signed int index_ring2 = 0;//全局变量：用于定时器自加的变量，控制灯珠的位置
 int flag1 = 0;//用来判断是哪条灯带触发点
 int flag2 = 0;
-int flag3 = 0;
-
-
-
-//全局变量：用于定时器自加的变量，控制灯珠的位置
 
 /*--------------按键的初始化--------*/
  int button1=2;
@@ -42,14 +27,11 @@ int flag3 = 0;
 void setup()
 {
   Serial.begin(9600); //初始化串口
-  FastLED.addLeds<WS2812, PIN_LED_RING1>(rgb_led_ring1, NUM_LEDS_RING1);//注册led1
   FastLED.addLeds<WS2812, PIN_LED_RING2>(rgb_led_ring2, NUM_LEDS_RING2);//注册led2
-  FastLED.addLeds<WS2812, PIN_LED_RING3>(rgb_led_ring3, NUM_LEDS_RING3);//注册led3
-  MsTimer2::set(10, onTimer); //设置中断，每1000ms进入一次中断服务程序 onTimer()
+  MsTimer2::set(10,onTimer); //设置中断，每1000ms进入一次中断服务程序 onTimer()
   MsTimer2::start(); //开始计时
   pinMode(button1,INPUT_PULLUP);//按键读取端口需要使用上拉电阻模式才可以实现    
   pinMode(button2,INPUT_PULLUP);
-  pinMode(button3,INPUT_PULLUP);
   
 }
 /*-------------loop循环----------------*/
@@ -58,64 +40,28 @@ void loop()
 
   MsTimer2::stop(); 
   clear();
-  Serial.println("flag_1 ");
-Serial.println(flag1);
-Serial.println("\n");
-    Serial.println("flag_2 ");
-Serial.println(flag2);
-Serial.println("\n");
-  Serial.println("flag_3 ");
-Serial.println(flag3);
-Serial.println("\n");
+
   if(digitalRead(button1) == LOW)//按键1触发，流水灯+普通点灯的效果
-  { 
-    MsTimer2::start();//启动定时器 
-    anime_of_buttonflowing(&flag1, &index_ring1, button1,rgb_led_ring1,0,60,255,255,255,50);//流水灯灯效
-     MsTimer2::stop();
-    anime_of_normallight(button1,rgb_led_ring1,61,NUM_LEDS_RING1,255,255,255,50);
-    /*--播放视频1--*/
-    Serial.println("video_1\n");
-   
+  {
     if(digitalRead(button2) == LOW)//按键1->按键2触发,变色流水灯
     { 
       MsTimer2::start();
-      anime_of_buttonflowing(&flag2, &index_ring2,button2,rgb_led_ring2,0,60,255,255,255,50);//流水灯灯效
+      anime_of_buttonflowing(&flag2, &index_ring2,button2,rgb_led_ring2,0,120,255,255,255,50);//流水灯灯效
       MsTimer2::stop();
-      anime_of_normallight(button2,rgb_led_ring2,61,NUM_LEDS_RING2,255,255,255,50);
       /*--播放视频2--*/
-      //Serial.print("video_2\n");
-      
-
-      if(digitalRead(button3) == LOW )//按键1触发->按键2->按键3触发，流水灯效果
-      { 
-        MsTimer2::start();
-        anime_of_buttonflowing(&flag3, &index_ring3,button3,rgb_led_ring3,0,60,255,255,255,50);//流水灯灯效
-        MsTimer2::stop();        
-        anime_of_normallight(button3,rgb_led_ring3,61,NUM_LEDS_RING3,255,255,255,50);
-        /*--播放视频3--*/
-        //Serial.print("video_3\n");
-      } 
     } 
     else
     {
-      if(digitalRead(button3) == LOW )//按键1触发之后按键3直接触发，红色灯的闪烁效果
-      { 
-        anime_of_blink(rgb_led_ring3,0,40,0,255,0,200,2,200);
-      }    
+      //clear led2        
+
     }
 
   }
   else
   {
-    /*--播放无人的视频--*/
-     //Serial.print("video_0\n");
     if(digitalRead(button2) == LOW)//按键2直接触发,警报闪烁按下触发
     { 
       anime_of_blink(rgb_led_ring2,0,40,0,255,0,200,2,200);
-    } 
-   if(digitalRead(button3) == LOW )//按键3直接触发
-    { 
-      anime_of_blink(rgb_led_ring3,0,40,0,255,0,200,2,200);
     } 
   } 
 }
@@ -123,9 +69,7 @@ Serial.println("\n");
 /*--------------中断服务程序----------*/
 void onTimer()
 {
-  if(flag1==1) index_ring1++;
   if(flag2==1) index_ring2++;
-  if(flag3==1) index_ring3++;
 }
  /*--------------自定义灯效函数--------------------*/
   /*--------------流水灯函数--------------------*/
@@ -194,10 +138,10 @@ void anime_of_normallight(int button,CRGB lightarray1[], int start , int end ,in
     }
     else
     {
-        for(i=0 ; i<end ; i++ )
-        {
-          lightarray1[i] = CRGB(0,0,0);
-        }
+      for(i=0 ; i<end ; i++ )
+      {
+        lightarray1[i] = CRGB(0,0,0);
+      }
         FastLED.show();
         //Serial.print("light2\n");
     }      
@@ -210,17 +154,15 @@ void anime_of_normallight(int button,CRGB lightarray1[], int start , int end ,in
 
 void clear()
 {
-    int i;
-    Serial.print("clear\n");
-  if(digitalRead(button1) == HIGH && digitalRead(button2) == HIGH && digitalRead(button3) == HIGH)
+  int i;
+  Serial.print("clear\n");
+  if(digitalRead(button1) == HIGH && digitalRead(button2) == HIGH)
   {
     for(i = 0 ; i < 120 ; i++ )
      {
-        rgb_led_ring1[i] = CRGB(0,0,0);
         rgb_led_ring2[i] = CRGB(0,0,0);
-        rgb_led_ring3[i] = CRGB(0,0,0);
       }
-    FastLED.show();//show同样可以调节颜色
+    FastLED.show();
   }
   return;
 }
